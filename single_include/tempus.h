@@ -27,8 +27,10 @@
 
 namespace tempus {
 
+namespace _ {
 
-namespace  {
+extern std::string AppDirectory;
+
 #ifdef WINDOWS_PLATFORM
          const char* Separator = "\\";
 #else
@@ -57,86 +59,84 @@ namespace  {
 
     inline std::string encodedTime()
     {
+        static int counter = std::rand(); // Counter
         std::time_t now = std::time(nullptr);
         char buffer[1024];
-        int size = std::snprintf(buffer, 1024, "%llx", now );
+        int size = std::snprintf(buffer, 1024, "%llx%04x", now, counter++ );
 
         return std::string(buffer, size);
     }
 
+    inline std::string getAppDirectory()
+    {
+        if (AppDirectory.length() > 0 )
+            return AppDirectory;
+
+        // Define varibale used in all platform
+        int pid = 0;
+        std::string base_name, full_name;
+
+        // Retreive temp path
+    #ifdef WINDOWS_PLATFORM
+
+        // Get the temp root folder
+        TCHAR tmp_path[MAX_PATH ];
+        DWORD path_size = GetTempPathA(MAX_PATH , tmp_path);
+
+        if (path_size == 0 || path_size > MAX_PATH ) {
+            return std::string();
+        }
+
+        TCHAR app_name[MAX_PATH];
+        GetModuleFileNameA(NULL, app_name, MAX_PATH );
+
+        pid = _getpid();
+        base_name = _::getBaseName(app_name);
+
+    #else
 
 
-}
 
-extern std::string AppDirectory;
+    #endif
 
-inline std::string getAppDirectory()
-{
-    if (AppDirectory.length() > 0 )
+        // Generate temp directory
+        char folder_name[1024];
+        std::snprintf( folder_name, 1024, "%s%i%s", base_name.c_str(), pid, _::encodedTime().c_str());
+
+
+        // Create directory
+    #ifdef WINDOWS_PLATFORM
+        full_name = std::string(tmp_path) + std::string(folder_name);
+        CreateDirectoryA(full_name.c_str(), NULL);
+        _::AppDirectory = full_name;
+    #else
+
+
+
+    #endif
+
         return AppDirectory;
-
-    // Define varibale used in all platform
-    int pid = 0;
-    std::string base_name, full_name;
-
-    // Retreive temp path
-#ifdef WINDOWS_PLATFORM
-
-    // Get the temp root folder
-    TCHAR tmp_path[MAX_PATH ];
-    DWORD path_size = GetTempPathA(MAX_PATH , tmp_path);
-
-    if (path_size == 0 || path_size > MAX_PATH ) {
-        return std::string();
     }
 
-    TCHAR app_name[MAX_PATH];
-    GetModuleFileNameA(NULL, app_name, MAX_PATH );
-
-    pid = _getpid();
-    base_name = getBaseName(app_name);
-
-#else
-
-
-
-#endif
-
-    // Generate temp directory
-    char folder_name[1024];
-    std::snprintf( folder_name, 1024, "%s%i%s", base_name.c_str(), pid, encodedTime().c_str());
-
-
-    // Create directory
-#ifdef WINDOWS_PLATFORM
-    full_name = std::string(tmp_path) + std::string(folder_name);
-    CreateDirectoryA(full_name.c_str(), NULL);
-    AppDirectory = full_name;
-#else
-
-
-
-#endif
-
-    return AppDirectory;
 }
 
-inline std::string tmpFilename(std::string const& name = "")
+
+inline std::string tmpFile(std::string const& name = "")
 {
     std::string filename = name;
-    if (name.length() == 0)
-        filename = encodedTime();
+    if (name.empty())
+        filename = _::encodedTime();
 
-    return getAppDirectory() + Separator + filename;
+    return _::getAppDirectory() + _::Separator + filename;
 }
 
 inline std::string tmpDir(std::string const& name = "")
 {
     std::string filename = name;
     if (name.empty())
-        filename = name;
+        filename = _::encodedTime();
 
-    filename = getAppDirectory() + Separator + filename;
+    filename = _::getAppDirectory() + _::Separator + filename;
 
 #ifdef WINDOWS_PLATFORM
     CreateDirectoryA(filename.c_str(), NULL);
@@ -148,8 +148,19 @@ inline std::string tmpDir(std::string const& name = "")
 }
 
 
+std::string uniqueName(std::string const& prefix = "")
+{
+    return prefix + _::encodedTime();
+}
+
+std::string appTempDirectory()
+{
+    return _::AppDirectory;
+}
+
+
 #ifdef TEMPUS_IMPL
-std::string AppDirectory = "";
+std::string _::AppDirectory = "";
 #endif
 
 

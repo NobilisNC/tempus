@@ -4,15 +4,23 @@
 #define TEMPUS_IMPL 1
 #include <tempus.h>
 
+#include <fstream>
+
 TEST_CASE("TEMPUS", "") {
-    auto tmp = tempus::tmpFilename();
-    auto a = tempus::getAppDirectory();
-    auto b =  tempus::getAppDirectory();
-    REQUIRE(a == b);
-    WARN(tmp);
+    auto a = tempus::tmpDir();
+    auto b =  tempus::tmpDir();
+    REQUIRE(a != b);
 
-   // REQUIRE(tmp.length() > 0);
-   // WARN(tmp);
+    auto c = tempus::tmpDir("hello");
+    auto d = tempus::tmpDir("abc");
+    REQUIRE(c != d);
 
-    //tempus::tmpDir();
+    auto x = tempus::uniqueName("abc");
+    REQUIRE(d != x);
+    REQUIRE(x != tempus::uniqueName("abc"));
+
+
+    std::fstream file;
+    file.open(tempus::tmpFile(), std::ios::out);
+    REQUIRE(file.is_open());
 }
