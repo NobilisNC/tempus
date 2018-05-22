@@ -2,7 +2,7 @@
 
 Tempus is a library to generate temporary files / directories.
 
-This library is cross-platform and work om UMIX and Windows.
+This library is cross-platform and work om UNIX and Windows.
 
 ```cpp
 #include <tempus.h>
